@@ -5,7 +5,7 @@
 ## 0. Reminder
 
 - Start to work this project as early as possible.
-- Write code by yourself and be honest. This is an **individual** project.
+- Write code by yourself and be honest. You can form a team of up to 2 people for this project.
 - Ask questions through Piazza or come to office hours.
 - Test program on [VM cluster](https://github.gatech.edu/cs6210-spring21/project1/blob/master/doc/vm_userguide.md) before making compression and [submission](./project_3_submission.md) .
 
