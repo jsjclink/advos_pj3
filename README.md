@@ -1,8 +1,8 @@
 # Project 3 - GT FileSystem
 
-**Release Date: Sunday, Mar 12, 2023**
+**Release Date: Monday, Mar 11, 2024**
 
-**Due Date: Monday, Apr 3, 2023, AoE**
+**Due Date: Wednesday, Apr 3, 2024 11:59pm**
 
 ---
 
@@ -12,7 +12,7 @@ You will need to implement specific API calls based on the provided code skeleto
 
 You may discuss ideas with students in the class, but the project must be done **by you and your teammate**.
 Copying others is NEVER allowed for any reason.
-Please refer to the Georgia Tech [honor code](http://www.honor.gatech.edu/).
+Please refer to the Georgia Tech [honor code](https://www.honor.gatech.edu/).
 
 * Clone the repo to get source code
 * [Project Description](./doc/project_3_description.md)
