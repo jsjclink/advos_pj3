@@ -1,7 +1,5 @@
 # Project 3: GT File System
 
-**Due Date - Monday, Apr 3, 2023, AoE**
-
 ## 0. Reminder
 
 - Start to work this project as early as possible.
