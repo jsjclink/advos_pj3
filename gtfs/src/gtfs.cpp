@@ -108,7 +108,7 @@ file_t* gtfs_open_file(gtfs_t* gtfs, string filename, int file_length) {
             }
             fl->file_length = file_length;
             fl->filename = filename;
-            fl->fp = fopen(filename,"w");
+            fl->fp = fopen(filename.c_str(),"w");
             if(!fl->fp){
                 VERBOSE_PRINT(do_verbose, "File Open Failed!\n");
                 free(fl->data);
@@ -140,19 +140,18 @@ int gtfs_close_file(gtfs_t* gtfs, file_t* fl) {
         VERBOSE_PRINT(do_verbose, "Closing file " << fl->filename << " inside directory " << gtfs->dirname << "\n");
         vector<file_t *>::iterator itr;
         for (itr = gtfs->fsq.begin(); itr != gtfs->fsq.end(); ++itr) {
-            if((*itr)->filename == filename) {
+            if((*itr)->filename == fl->filename) {
                 fl = *itr;
                 found = 1;
                 break;
             }
         }
         if(found){
-            gtfs->fsq.erase(itr);
-            free(fl->data);
             if(fclose(fl->fp)){
                 VERBOSE_PRINT(do_verbose, "File Close Error\n");
                 return ret;
             }
+            fl->fp = NULL;
         }
         else{
             VERBOSE_PRINT(do_verbose, "File Not in Directory\n");
@@ -172,14 +171,36 @@ int gtfs_close_file(gtfs_t* gtfs, file_t* fl) {
 
 int gtfs_remove_file(gtfs_t* gtfs, file_t* fl) {
     int ret = -1;
+    int found = 0;
     if (gtfs and fl) {
         VERBOSE_PRINT(do_verbose, "Removing file " << fl->filename << " inside directory " << gtfs->dirname << "\n");
+        vector<file_t *>::iterator itr;
+        for (itr = gtfs->fsq.begin(); itr != gtfs->fsq.end(); ++itr) {
+            if((*itr)->filename == fl->filename) {
+                fl = *itr;
+                found = 1;
+                break;
+            }
+        }
+        if(found){
+            gtfs->fsq.erase(itr);
+            free(fl->data);
+            if(fclose(fl->fp)){
+                VERBOSE_PRINT(do_verbose, "File Close Error\n");
+                return ret;
+            }
+            free(fl);
+        }
+        else{
+            VERBOSE_PRINT(do_verbose, "File Not in Directory\n");
+            return ret;
+        }
     } else {
         VERBOSE_PRINT(do_verbose, "GTFileSystem or file does not exist\n");
         return ret;
     }
     //TODO: Add any additional initializations and checks, and complete the functionality
-
+    ret = 0;
     VERBOSE_PRINT(do_verbose, "Success\n"); //On success returns 0.
     return ret;
 }
