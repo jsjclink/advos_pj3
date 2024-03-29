@@ -7,6 +7,9 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <vector>
+#include <algorithm>
+#include <fstream>
 
 using namespace std;
 
@@ -23,12 +26,17 @@ extern int do_verbose;
 typedef struct gtfs {
     string dirname;
     // TODO: Add any additional fields if necessary
+    vector<file_t*> fsq;
 } gtfs_t;
+
+extern vector<gtfs_t *> efd;
 
 typedef struct file {
     string filename;
     int file_length;
     // TODO: Add any additional fields if necessary
+    FILE* fp;
+    void* data;
 } file_t;
 
 typedef struct write {
