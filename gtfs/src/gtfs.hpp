@@ -23,6 +23,14 @@ using namespace std;
 
 extern int do_verbose;
 
+typedef struct file {
+    string filename;
+    int file_length;
+    // TODO: Add any additional fields if necessary
+    FILE* fp;
+    void* data;
+} file_t;
+
 typedef struct gtfs {
     string dirname;
     // TODO: Add any additional fields if necessary
@@ -31,13 +39,7 @@ typedef struct gtfs {
 
 extern vector<gtfs_t *> efd;
 
-typedef struct file {
-    string filename;
-    int file_length;
-    // TODO: Add any additional fields if necessary
-    FILE* fp;
-    void* data;
-} file_t;
+
 
 typedef struct write {
     string filename;

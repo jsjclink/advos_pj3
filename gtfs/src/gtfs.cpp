@@ -115,12 +115,14 @@ file_t* gtfs_open_file(gtfs_t* gtfs, string filename, int file_length) {
                 free(fl);
                 return NULL;
             }
-            if(fread(fl->data,sizeof(char),file_length,fl->fp) != file_length){
-                VERBOSE_PRINT(do_verbose, "File Read Failed!\n");
-                free(fl->data);
-                free(fl);
-                return NULL;
-            }
+            // size_t a = fread(fl->data,sizeof(char),file_length,fl->fp);
+            // cout << a;
+            // if( a != file_length){
+            //     VERBOSE_PRINT(do_verbose, "File Read Failed!\n");
+            //     free(fl->data);
+            //     free(fl);
+            //     return NULL;
+            // }
             gtfs->fsq.push_back(fl);
         }
     } else {
@@ -183,12 +185,12 @@ int gtfs_remove_file(gtfs_t* gtfs, file_t* fl) {
             }
         }
         if(found){
-            gtfs->fsq.erase(itr);
-            free(fl->data);
-            if(fclose(fl->fp)){
-                VERBOSE_PRINT(do_verbose, "File Close Error\n");
+            if(!fl->fp){
+                VERBOSE_PRINT(do_verbose, "File is still Open\n");
                 return ret;
             }
+            gtfs->fsq.erase(itr);
+            free(fl->data);
             free(fl);
         }
         else{
