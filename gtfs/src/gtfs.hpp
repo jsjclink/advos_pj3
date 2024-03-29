@@ -47,6 +47,7 @@ typedef struct write {
     int length;
     char *data;
     // TODO: Add any additional fields if necessary
+    FILE * filep;
 } write_t;
 
 // GTFileSystem basic API calls

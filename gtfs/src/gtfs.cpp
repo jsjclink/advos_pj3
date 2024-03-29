@@ -211,6 +211,15 @@ char* gtfs_read_file(gtfs_t* gtfs, file_t* fl, int offset, int length) {
     char* ret_data = NULL;
     if (gtfs and fl) {
         VERBOSE_PRINT(do_verbose, "Reading " << length << " bytes starting from offset " << offset << " inside file " << fl->filename << "\n");
+        //TODO: This is for regular files, should change to actual write versions.
+        if (fseek(fl->fp, offset, SEEK_SET) != 0) {
+            VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
+            return NULL;
+        }
+        size_t data_len = fread(fl->data,sizeof(char),length,fl->fp);
+        if(!data_len) fl->data = (void *)"";
+        ret_data = (char *) fl->data;
+        cout << ret_data;
     } else {
         VERBOSE_PRINT(do_verbose, "GTFileSystem or file does not exist\n");
         return NULL;
@@ -225,6 +234,16 @@ write_t* gtfs_write_file(gtfs_t* gtfs, file_t* fl, int offset, int length, const
     write_t *write_id = NULL;
     if (gtfs and fl) {
         VERBOSE_PRINT(do_verbose, "Writting " << length << " bytes starting from offset " << offset << " inside file " << fl->filename << "\n");
+        write_id = (write_t *)malloc(sizeof(write_t));
+        if(!write_id){
+            VERBOSE_PRINT(do_verbose, "Malloc Failed\n");
+            return NULL;
+        }
+        write_id->data = const_cast<char*>(data);
+        write_id->offset = offset;
+        write_id->length = length;
+        write_id->filep = fl->fp;
+        write_id->filename = fl->filename;
     } else {
         VERBOSE_PRINT(do_verbose, "GTFileSystem or file does not exist\n");
         return NULL;
@@ -239,6 +258,16 @@ int gtfs_sync_write_file(write_t* write_id) {
     int ret = -1;
     if (write_id) {
         VERBOSE_PRINT(do_verbose, "Persisting write of " << write_id->length << " bytes starting from offset " << write_id->offset << " inside file " << write_id->filename << "\n");
+        if (fseek(write_id->filep, write_id->offset, SEEK_SET) != 0) {
+            VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
+            return ret;
+        }
+        size_t data_len = fwrite(write_id->data,sizeof(char),write_id->length,write_id->filep);
+        if(data_len == write_id->length) ret = data_len;
+        else{
+            VERBOSE_PRINT(do_verbose, "Write failed\n");
+            return ret;
+        }
     } else {
         VERBOSE_PRINT(do_verbose, "Write operation does not exist\n");
         return ret;
