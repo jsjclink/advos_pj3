@@ -1,4 +1,4 @@
-CFLAGS  =
+CFLAGS  = -g
 LFLAGS  =
 CC      = g++
 RM      = /bin/rm -rf
@@ -25,4 +25,4 @@ $(LIB_OBJ) : $(LIB_SRC)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) $(LIBRARY) src/*.o tests/test
+	$(RM) $(LIBRARY) src/*.o tests/test tests/test1.txt tests/test2.txt tests/test3.txt
