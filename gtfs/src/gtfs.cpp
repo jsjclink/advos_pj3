@@ -12,6 +12,10 @@ vector<gtfs_t *> efd;
 // fread보다는 fseek와 ftell로 파일 크기를 읽는게 바람직함
 // 파일을 해당 크기로 생성할 때는 그냥 0으로 채우는게 나을 듯
 // 따라서 fl->data는 file content를 의미하는게 아닌 것 같음
+// 로그가 필요한 상황?
+// 1. 함수 시작할 떄? (극단적) <- 로그 파일 쓰다가 터지는 경우 고려하려고?(시간 남으면)
+// 2. 파일 쓰기 전, 쓰고 나서 각각 -> 이래야 쓰는 중에 오류 걸렸을 때 로그 파일 보고 복구할 수 있으니까?
+
 
 gtfs_t* gtfs_init(string directory, int verbose_flag) {
     do_verbose = verbose_flag;
