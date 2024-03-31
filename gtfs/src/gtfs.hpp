@@ -26,9 +26,8 @@ extern int do_verbose;
 typedef struct file {
     string filename;
     int file_length;
-    // TODO: Add any additional fields if necessary
+    vector<write_t*> writes;
     FILE* fp;
-    void* data;
     FILE* log;
 } file_t;
 
@@ -48,7 +47,9 @@ typedef struct write {
     int length;
     char *data;
     // TODO: Add any additional fields if necessary
-    FILE * filep;
+    string id;
+    FILE* filep;
+    FILE* log;
 } write_t;
 
 // GTFileSystem basic API calls
