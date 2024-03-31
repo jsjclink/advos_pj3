@@ -22,16 +22,39 @@ string generate_unique_id() {
     return ss.str();
 }
 
+int trct_log(file_t* file){
+    int ret = -1;
+    for (const auto& write: file->writes){
+        if(!(write->com)){
+            if (fseek((write->filep)->fp, write->offset, SEEK_SET) != 0) {
+                VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
+                return ret;
+            }
+            size_t data_len = fwrite(write->data,sizeof(char),write->length,(write->filep)->fp);
+            if(data_len != write->length){
+                VERBOSE_PRINT(do_verbose, "Write failed\n");
+                return ret;
+            }
+        }
+        delete write->data;
+        delete write;
+    }
+    file->writes.clear();
+    fclose(file->log);
+    file->log = fopen((file->filename + ".log").c_str(),"w+");
+    return 0;
+}
+
+
 gtfs_t* gtfs_init(string directory, int verbose_flag) {
     do_verbose = verbose_flag;
     gtfs_t *gtfs = NULL;
     int found = 0;
     VERBOSE_PRINT(do_verbose, "Initializing GTFileSystem inside directory " << directory << "\n");
 
-    vector<gtfs_t *>::iterator itr;
-    for (itr = efd.begin(); itr != efd.end(); ++itr) {
-        if((*itr)->dirname == directory) {
-            gtfs = *itr;
+    for (const auto& dir: efd) {
+        if(dir->dirname == directory) {
+            gtfs = dir;
             found = 1;
             break;
         }
@@ -54,6 +77,12 @@ int gtfs_clean(gtfs_t *gtfs) {
     int ret = -1;
     if (gtfs) {
         VERBOSE_PRINT(do_verbose, "Cleaning up GTFileSystem inside directory " << gtfs->dirname << "\n");
+        for (const auto& file: gtfs->fsq){
+            if(trct_log(file) <0 ){
+                VERBOSE_PRINT(do_verbose, "Error while truncating log\n");
+                return ret;
+            }
+        }
         
     } else {
         VERBOSE_PRINT(do_verbose, "GTFileSystem does not exist\n");
@@ -113,6 +142,7 @@ file_t* gtfs_open_file(gtfs_t* gtfs, string filename, int file_length) {
         fl->file_length = file_length;
         fl->filename = filename;
         fl->fp = fopen(filename.c_str(), "r+");
+        fl->log = fopen((filename + ".log").c_str(),"r+");
         //if file doesn't exist in disk, create new file and corresponding log file.
         if(!fl->fp) {
             fl->fp = fopen(filename.c_str(),"w+");
@@ -122,7 +152,7 @@ file_t* gtfs_open_file(gtfs_t* gtfs, string filename, int file_length) {
                 return NULL;
             }
             //create log file
-            fl->log = fopen((filename + ".log").c_str(),"w");
+            fl->log = fopen((filename + ".log").c_str(),"w+");
         }
         
         gtfs->fsq.push_back(fl);
@@ -147,10 +177,15 @@ int gtfs_close_file(gtfs_t* gtfs, file_t* fl) {
         if((*itr)->filename == fl->filename) {
             fl = *itr;
             found = 1;
+            gtfs->fsq.erase(itr);
             break;
         }
     }
     if(found){
+        if(trct_log(fl) <0 ){
+            VERBOSE_PRINT(do_verbose, "Error while truncating log\n");
+            return ret;
+        }
         if(fclose(fl->fp)){
             VERBOSE_PRINT(do_verbose, "File Close Error\n");
             return ret;
@@ -162,6 +197,7 @@ int gtfs_close_file(gtfs_t* gtfs, file_t* fl) {
         return ret;
     }
     // free fl
+
     delete fl;
 
     VERBOSE_PRINT(do_verbose, "Success\n"); //On success returns 0.
