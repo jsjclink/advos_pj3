@@ -22,11 +22,12 @@ using namespace std;
 #define MAX_NUM_FILES_PER_DIR 1024
 
 extern int do_verbose;
+struct write;
 
 typedef struct file {
     string filename;
     int file_length;
-    vector<write_t*> writes;
+    vector<struct write*> writes;
     FILE* fp;
     FILE* log;
 } file_t;
@@ -48,8 +49,10 @@ typedef struct write {
     char *data;
     // TODO: Add any additional fields if necessary
     string id;
-    FILE* filep;
-    FILE* log;
+    //FILE* filep;
+    //FILE* log;
+    file_t* filep;
+    int com;
 } write_t;
 
 // GTFileSystem basic API calls
