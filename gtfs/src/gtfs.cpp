@@ -133,6 +133,8 @@ file_t* gtfs_open_file(gtfs_t* gtfs, string filename, int file_length) {
                     delete fl;
                     return NULL;
                 }
+                //create log file
+                fl->log = fopen((filename + ".log").c_str(),"w");
             }
             
             gtfs->fsq.push_back(fl);
@@ -202,6 +204,10 @@ int gtfs_remove_file(gtfs_t* gtfs, file_t* fl) {
                 return ret;
             }
             gtfs->fsq.erase(itr);
+            if(fclose(fl->log)){
+                VERBOSE_PRINT(do_verbose, "File Close Error\n");
+                return ret;
+            }
             free(fl->data);
             delete fl;
         }
@@ -230,8 +236,8 @@ char* gtfs_read_file(gtfs_t* gtfs, file_t* fl, int offset, int length) {
         }
         ret_data = new char[length];
         size_t data_len = fread(ret_data,sizeof(char),length,fl->fp);
-        cout << data_len;
-        cout << ret_data;
+        //cout << data_len;
+        //cout << ret_data;
     } else {
         VERBOSE_PRINT(do_verbose, "GTFileSystem or file does not exist\n");
         return NULL;
@@ -256,6 +262,14 @@ write_t* gtfs_write_file(gtfs_t* gtfs, file_t* fl, int offset, int length, const
         write_id->length = length;
         write_id->filep = fl->fp;
         write_id->filename = fl->filename;
+        string logstr = "0" + to_string(length) + " " + to_string(offset) + " " + data;
+
+        size_t data_len = fwrite(&logstr,sizeof(char),logstr.length(),fl->log);
+        if(data_len != logstr.length() ){
+            VERBOSE_PRINT(do_verbose, "Write to log Failed\n");
+            delete write_id;
+            return NULL;
+        }
     } else {
         VERBOSE_PRINT(do_verbose, "GTFileSystem or file does not exist\n");
         return NULL;

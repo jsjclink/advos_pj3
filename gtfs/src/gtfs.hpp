@@ -29,6 +29,7 @@ typedef struct file {
     // TODO: Add any additional fields if necessary
     FILE* fp;
     void* data;
+    FILE* log;
 } file_t;
 
 typedef struct gtfs {
