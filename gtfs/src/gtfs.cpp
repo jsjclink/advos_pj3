@@ -250,6 +250,9 @@ int gtfs_remove_file(gtfs_t* gtfs, file_t* fl) {
 
 char* gtfs_read_file(gtfs_t* gtfs, file_t* fl, int offset, int length) {
     char* ret_data = new char[length];
+    int cur_pid = getpid();
+    size_t pos;
+    int pid;
     memset(ret_data, 0, length);
     if(!(gtfs and fl && fl->fp)) {
         VERBOSE_PRINT(do_verbose, "GTFileSystem or file or fp does not exist\n");
@@ -261,6 +264,9 @@ char* gtfs_read_file(gtfs_t* gtfs, file_t* fl, int offset, int length) {
     fread(ret_data, sizeof(char), length, fl->fp);
     // read current writes in memory
     for (const auto& write: fl->writes) {
+        pos = write->id.find('_');
+        pid = stoi(write->id.substr(0, pos));
+        if(pid != cur_pid) continue;
         if(write->com) continue;
         if (write->offset < offset + length and write->offset + write->length > offset) {
             int write_start = std::max(offset, write->offset);
