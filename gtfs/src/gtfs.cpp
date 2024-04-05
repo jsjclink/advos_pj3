@@ -22,19 +22,69 @@ string generate_unique_id() {
     return ss.str();
 }
 
-int trct_log(file_t* file){
+int find_write(file_t* fl,string id){
+    int ret = 0;
+    for (const auto& write: fl->writes) {
+         if(write->id == id) ret = 1;
+    }
+    return ret;
+}
+
+int trct_disk_log(file_t* file){
+    int ret = -1;
+    int out = 1;
+    char line[256];
+
+    while (out) {
+        write_t *write_id = new (std::nothrow) write_t();
+        for (int i = 0; i < 5; ++i) {
+            if (fgets(line, sizeof(line), file->log) != nullptr) {
+                string strl = line;
+                size_t colonPos = strl.find(':');
+                if(i==0 ){
+                    write_id->id = strl.substr(colonPos+1);
+                    if(!find_write(file,write_id->id)) continue;
+                }
+                else if(i==1){
+                    write_id->filename = strl.substr(colonPos+1);
+                }
+                else if(i==2){
+                    write_id->offset = stoi(strl.substr(colonPos+1));
+                }
+                else if(i==3){
+                    write_id->length = stoi(strl.substr(colonPos+1));
+                }
+                else{
+                    write_id->data = new char[write_id->length];
+                    memcpy(write_id->data, strl.substr(colonPos+1).c_str(), write_id->length);
+                }
+            } else {
+                out = 0;
+                break;
+            }
+        }
+        if(out){
+            write_id->filep = file;
+            write_id->com = 1;
+            file->writes.push_back(write_id);
+        }
+    }
+    ret = 0;
+    return ret;
+}
+
+
+int trct_mem_log(file_t* file){
     int ret = -1;
     for (const auto& write: file->writes){
-        if(!(write->com)){
-            if (fseek((write->filep)->fp, write->offset, SEEK_SET) != 0) {
-                VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
-                return ret;
-            }
-            size_t data_len = fwrite(write->data,sizeof(char),write->length,(write->filep)->fp);
-            if(data_len != write->length){
-                VERBOSE_PRINT(do_verbose, "Write failed\n");
-                return ret;
-            }
+        if (fseek((write->filep)->fp, write->offset, SEEK_SET) != 0) {
+            VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
+            return ret;
+        }
+        size_t data_len = fwrite(write->data,sizeof(char),write->length,(write->filep)->fp);
+        if(data_len != write->length){
+            VERBOSE_PRINT(do_verbose, "Write failed\n");
+            return ret;
         }
         delete write->data;
         delete write;
@@ -78,7 +128,11 @@ int gtfs_clean(gtfs_t *gtfs) {
     if (gtfs) {
         VERBOSE_PRINT(do_verbose, "Cleaning up GTFileSystem inside directory " << gtfs->dirname << "\n");
         for (const auto& file: gtfs->fsq){
-            if(trct_log(file) <0 ){
+            if(trct_disk_log(file) <0 ){
+                VERBOSE_PRINT(do_verbose, "Error while truncating log\n");
+                return ret;
+            }
+            if(trct_mem_log(file) <0 ){
                 VERBOSE_PRINT(do_verbose, "Error while truncating log\n");
                 return ret;
             }
@@ -182,7 +236,11 @@ int gtfs_close_file(gtfs_t* gtfs, file_t* fl) {
         }
     }
     if(found){
-        if(trct_log(fl) <0 ){
+        if(trct_disk_log(fl) <0 ){
+                VERBOSE_PRINT(do_verbose, "Error while truncating log\n");
+                return ret;
+            }
+        if(trct_mem_log(fl) <0 ){
             VERBOSE_PRINT(do_verbose, "Error while truncating log\n");
             return ret;
         }
@@ -267,7 +325,6 @@ char* gtfs_read_file(gtfs_t* gtfs, file_t* fl, int offset, int length) {
         pos = write->id.find('_');
         pid = stoi(write->id.substr(0, pos));
         if(pid != cur_pid) continue;
-        if(write->com) continue;
         if (write->offset < offset + length and write->offset + write->length > offset) {
             int write_start = std::max(offset, write->offset);
             int write_end = std::min(offset + length, write->offset + write->length);
@@ -342,19 +399,23 @@ int gtfs_sync_write_file(write_t* write_id) {
         VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
         return ret;
     }
+    /*
     size_t data_len = fwrite(write_id->data,sizeof(char),write_id->length,(write_id->filep)->fp);
     if(data_len == write_id->length) ret = data_len;
     else{
         VERBOSE_PRINT(do_verbose, "Write failed\n");
         return ret;
     }
-
+    */
     // write log file
     int log_result = fprintf((write_id->filep)->log, "write_id: %s\nfilename: %s\noffset: %d\nlength: %d\ndata: %.*s\n\n",
                              write_id->id.c_str(), write_id->filename.c_str(), write_id->offset, write_id->length, write_id->length, write_id->data);
     if (log_result < 0) {
         VERBOSE_PRINT(do_verbose, "Write to log failed\n");
         return ret;
+    }
+    else{
+        ret = write_id->length;
     }
     fflush((write_id->filep)->log);
     write_id->com = 1;
