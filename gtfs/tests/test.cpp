@@ -33,9 +33,8 @@ void writer_abort() {
 
     string str = "Hi, I'm the writer.\n";
     write_t *wrt = gtfs_write_file(gtfs, fl, 10, str.length(), str.c_str());
-    abort();
     gtfs_sync_write_file(wrt);
-
+    abort();
     gtfs_close_file(gtfs, fl);
 }
 
@@ -73,11 +72,10 @@ void reader_abort() {
     gtfs_t *gtfs = gtfs_init(directory, verbose);
     string filename = "test5.txt";
     file_t *fl = gtfs_open_file(gtfs, filename, 100);
-    string stri = "Hi, I'm the writer.\n";
-    const char *data = gtfs_read_file(gtfs, fl, 10, stri.length());
-    std::string str(data);
-    if (str.empty()) {
-        cout << PASS;
+    string str = "Hi, I'm the writer.\n";
+    const char *data = gtfs_read_file(gtfs, fl, 10, str.length());
+    if (data != NULL) {
+        str.compare(string(data)) == 0 ? cout << PASS : cout << FAIL;
     } else {
         cout << FAIL;
     }

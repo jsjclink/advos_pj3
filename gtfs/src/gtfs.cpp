@@ -198,6 +198,10 @@ file_t* gtfs_open_file(gtfs_t* gtfs, string filename, int file_length) {
         fl->fp = fopen(filename.c_str(), "r+");
         fl->log = fopen((filename + ".log").c_str(),"r+");
         //if file doesn't exist in disk, create new file and corresponding log file.
+        if(fl->log){
+            trct_disk_log(fl);
+            trct_mem_log(fl);
+        }
         if(!fl->fp) {
             fl->fp = fopen(filename.c_str(),"w+");
             if(!fl->fp){
@@ -324,7 +328,9 @@ char* gtfs_read_file(gtfs_t* gtfs, file_t* fl, int offset, int length) {
     for (const auto& write: fl->writes) {
         pos = write->id.find('_');
         pid = stoi(write->id.substr(0, pos));
-        if(pid != cur_pid) continue;
+        if(pid != cur_pid) {
+            if(!(write->com)) continue;
+        }
         if (write->offset < offset + length and write->offset + write->length > offset) {
             int write_start = std::max(offset, write->offset);
             int write_end = std::min(offset + length, write->offset + write->length);
@@ -393,13 +399,12 @@ int gtfs_sync_write_file(write_t* write_id) {
     }
 
     VERBOSE_PRINT(do_verbose, "Persisting write of " << write_id->length << " bytes starting from offset " << write_id->offset << " inside file " << write_id->filename << "\n");
-    
+    /*
     // write data to file
     if (fseek((write_id->filep)->fp, write_id->offset, SEEK_SET) != 0) {
         VERBOSE_PRINT(do_verbose, "Seek(moving to offset) failed\n");
         return ret;
     }
-    /*
     size_t data_len = fwrite(write_id->data,sizeof(char),write_id->length,(write_id->filep)->fp);
     if(data_len == write_id->length) ret = data_len;
     else{
@@ -408,7 +413,7 @@ int gtfs_sync_write_file(write_t* write_id) {
     }
     */
     // write log file
-    int log_result = fprintf((write_id->filep)->log, "write_id: %s\nfilename: %s\noffset: %d\nlength: %d\ndata: %.*s\n\n",
+    int log_result = fprintf((write_id->filep)->log, "write_id:%s\nfilename:%s\noffset:%d\nlength:%d\ndata:%.*s\n\n",
                              write_id->id.c_str(), write_id->filename.c_str(), write_id->offset, write_id->length, write_id->length, write_id->data);
     if (log_result < 0) {
         VERBOSE_PRINT(do_verbose, "Write to log failed\n");
@@ -476,7 +481,20 @@ int gtfs_sync_write_file_n_bytes(write_t* write_id, int bytes){
         VERBOSE_PRINT(do_verbose, "Write operation does not exist\n");
         return ret;
     }
-
+    char *data = new char[write_id->length];
+    memcpy(data, write_id->data, bytes);
+    // write log file
+    int log_result = fprintf((write_id->filep)->log, "write_id: %s\nfilename: %s\noffset: %d\nlength: %d\ndata: %.*s\n\n",
+                             write_id->id.c_str(), write_id->filename.c_str(), write_id->offset, write_id->length, write_id->length, data);
+    if (log_result < 0) {
+        VERBOSE_PRINT(do_verbose, "Write to log failed\n");
+        return ret;
+    }
+    else{
+        ret = bytes;
+    }
+    fflush((write_id->filep)->log);
+    write_id->com = 1;
     VERBOSE_PRINT(do_verbose, "Success\n"); //On success returns 0.
     return ret;
 }
